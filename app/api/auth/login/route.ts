@@ -6,6 +6,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { email, password } = body;
+    
     if (!email || !password) {
       return NextResponse.json(
         {
@@ -15,25 +16,33 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+    
     const findUser = await Prisma.user.findUnique({
       where: {
         email,
       },
     });
+    
     if (!findUser) {
-      return NextResponse.json({
-        success: false,
-        message: "User dose not exist",
-      });
+      return NextResponse.json(
+        {
+          success: false,
+          message: "User does not exist",
+        },
+        { status: 400 } 
+      );
     }
 
     const isPasswordCorrect = await bcrypt.compare(password, findUser.password);
 
     if (!isPasswordCorrect) {
-      return NextResponse.json({
-        success: false,
-        message: "password dose not match",
-      });
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Password does not match",
+        },
+        { status: 401 } 
+      );
     }
 
     return NextResponse.json(
