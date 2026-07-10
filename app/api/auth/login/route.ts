@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import Prisma from "@/lib/prisma";
 
 export async function POST(request: Request) {
@@ -45,13 +46,32 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json(
+    const token = jwt.sign(
+      {
+        id: findUser.id,
+        email: findUser.email,
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: "15d" }
+    );
+
+    const response = NextResponse.json(
       {
         success: true,
         message: "Login successfully",
       },
       { status: 200 },
     );
+
+    response.cookies.set("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 15 * 24 * 60 * 60,
+      path: "/",
+    });
+
+    return response;
+
   } catch (error) {
     console.log(error);
     return NextResponse.json(
