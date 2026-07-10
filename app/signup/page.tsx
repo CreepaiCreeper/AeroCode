@@ -1,6 +1,7 @@
 "use client";
 import { LockIcon, MailIcon } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { useState } from "react";
 import { MdAccountCircle } from "react-icons/md";
 
@@ -10,6 +11,7 @@ const Page = () => {
   const [Password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
+  const router = useRouter()
 
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
@@ -41,6 +43,10 @@ const handleSubmit = async (e: React.FormEvent) => {
       setName("");
       setEmail("");
       setPassword("");
+
+      setTimeout(() => {
+        router.push("/")
+      }, 1500);
     } else {
       setMessage(data.message || "Account creation failed!");
       setIsSuccess(false);
