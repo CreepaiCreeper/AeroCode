@@ -1,7 +1,7 @@
 "use client";
 import { LockIcon, MailIcon } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { MdAccountCircle } from "react-icons/md";
 
