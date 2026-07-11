@@ -14,4 +14,25 @@ model User {
   password  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  projects  Project[]
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  title       String
+  codeContent String   @db.Text
+  createdAt   DateTime @default(now())
+  userId      String
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages Message[]
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  role      String
+  content   String   @db.Text
+  mode      String
+  createdAt DateTime @default(now())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
