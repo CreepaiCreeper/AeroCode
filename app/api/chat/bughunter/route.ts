@@ -40,12 +40,13 @@ export async function POST(request: NextRequest) {
     }
 
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-    const reponse =  await groq.chat.completions.create({
+    const response = await groq.chat.completions.create({
       model: "openai/gpt-oss-120b",
       messages: [
         {
           role: "system",
-          content: "You are BugHunter, an elite debugging assistant for AeroCode. Analyze the code provided by the user, find bugs/errors, and provide a clear explanation with headings, bullet points, and emojis. Always provide the 100% corrected code inside proper markdown code blocks.",
+          content:
+            "You are BugHunter, an elite debugging assistant for AeroCode. Analyze the code provided by the user, find bugs/errors, and provide a clear explanation with headings, bullet points, and emojis. Always provide the 100% corrected code inside proper markdown code blocks.",
         },
         {
           role: "user",
@@ -53,18 +54,53 @@ export async function POST(request: NextRequest) {
         },
       ],
     });
+
+    const aiResponse = response.choices[0].message.content;
+
+    let currentProjectId = body.projectId;
+
+    if (!currentProjectId) {
+      const newProject = await Prisma.project.create({
+        data: {
+          title: body.title || "BugHunter",
+          codeContent: body.prompt,
+          userId: user.id,
+        },
+      });
+      currentProjectId = newProject.id;
+    }
+
+    await Prisma.message.create({
+      data: {
+        role: "user",
+        content: body.prompt,
+        mode: "bughunter",
+        projectId: currentProjectId,
+      },
+    });
+
+    await Prisma.message.create({
+      data: {
+        role: "assistant",
+        content: aiResponse || "",
+        mode: "bughunter",
+        projectId: currentProjectId,
+      },
+    });
+
     return NextResponse.json({
-  success: true,
-  data: reponse.choices[0].message.content
-});
+      success: true,
+      projectId:currentProjectId,
+      data: response.choices[0].message.content,
+    });
   } catch (error) {
-    console.error(error)
+    console.error(error);
     return NextResponse.json(
       {
         success: false,
         message: "Internal server error",
       },
-      { status: 401 },
+      { status: 500 },
     );
   }
 }

@@ -54,18 +54,52 @@ export async function POST(request: NextRequest) {
         },
       ],
     });
+
+    const aiResponse = reponse.choices[0].message.content;
+
+    let currentProjectId = body.projectId;
+
+    if (!currentProjectId) {
+      const newProject = await Prisma.project.create({
+        data: {
+          title: body.title || "Blueprint",
+          codeContent: body.prompt,
+          userId: user.id,
+        },
+      });
+      currentProjectId = newProject.id;
+    }
+    await Prisma.message.create({
+      data: {
+        role: "user",
+        content: body.prompt,
+        mode: "blueprint",
+        projectId: currentProjectId,
+      },
+    });
+    
+   await Prisma.message.create({
+    data:{
+        role:"assistant",
+        content: aiResponse || "",
+        mode: "Blueprint",
+        projectId: currentProjectId
+    }
+   })
+
     return NextResponse.json({
       success: true,
+      projectId: currentProjectId,
       data: reponse.choices[0].message.content,
     });
   } catch (error) {
-    console.error(error)
+    console.error(error);
     return NextResponse.json(
       {
         success: false,
         message: "Internal server error",
       },
-      { status: 401 },
+      { status: 500 },
     );
   }
 }
