@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     if (!currentProjectId) {
       const newProject = await Prisma.project.create({
         data: {
-          title: body.title || "Blueprint",
+          title: body.title || "blueprint",
           codeContent: body.prompt,
           userId: user.id,
         },
