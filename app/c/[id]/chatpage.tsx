@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Check, Copy, Terminal, ChevronDown, ChevronUp } from "lucide-react";
+import Sidebar from "@/components/Sidebar";
 
 type Message = {
   id: string;
@@ -15,12 +16,22 @@ interface ChatPageProps {
   mode: string;
 }
 
-// Separate Message Component to handle its own Expand/Collapse state cleanly
-const ChatMessageItem = ({ msg, mode, renderMessageContent }: { msg: Message; mode: string; renderMessageContent: (content: string, msgId: string) => React.ReactNode }) => {
+const ChatMessageItem = ({
+  msg,
+  mode,
+  renderMessageContent,
+}: {
+  msg: Message;
+  mode: string;
+  renderMessageContent: (content: string, msgId: string) => React.ReactNode;
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const maxLength = 600;
   const shouldTruncate = msg.role === "user" && msg.content.length > maxLength;
-  const displayContent = shouldTruncate && !isExpanded ? msg.content.slice(0, maxLength) + "..." : msg.content;
+  const displayContent =
+    shouldTruncate && !isExpanded
+      ? msg.content.slice(0, maxLength) + "..."
+      : msg.content;
 
   return (
     <div className={`flex w-full ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
@@ -33,10 +44,12 @@ const ChatMessageItem = ({ msg, mode, renderMessageContent }: { msg: Message; mo
       >
         <div className="flex items-center justify-between mb-2">
           <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">
-            {msg.role === "user" ? "You" : `${mode === "blueprint" ? "📐 Blueprint" : "🪲 BugHunter"} AI`}
+            {msg.role === "user"
+              ? "You"
+              : `${mode === "blueprint" ? "📐 Blueprint" : "🪲 BugHunter"} AI`}
           </span>
         </div>
-        
+
         <div className="space-y-1 w-full overflow-hidden transition-all duration-300">
           {renderMessageContent(displayContent, msg.id)}
         </div>
@@ -71,11 +84,10 @@ const ChatPage = ({ messages, projectId, mode }: ChatPageProps) => {
   const [chatMessages, setChatMessages] = useState<Message[]>(messages);
   const [loading, setLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-Scroll to Bottom Hook
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -84,7 +96,6 @@ const ChatPage = ({ messages, projectId, mode }: ChatPageProps) => {
     scrollToBottom();
   }, [chatMessages, loading]);
 
-  // Auto-resize textarea heights based on content lines
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
@@ -107,7 +118,8 @@ const ChatPage = ({ messages, projectId, mode }: ChatPageProps) => {
     setLoading(true);
 
     try {
-      const apiRoute = mode === "blueprint" ? "/api/chat/blueprint" : "/api/chat/bughunter";
+      const apiRoute =
+        mode === "blueprint" ? "/api/chat/blueprint" : "/api/chat/bughunter";
 
       const response = await fetch(apiRoute, {
         method: "POST",
@@ -131,8 +143,6 @@ const ChatPage = ({ messages, projectId, mode }: ChatPageProps) => {
             role: "assistant",
           },
         ]);
-      } else {
-        console.error("Backend error:", data.message);
       }
     } catch (error) {
       console.error("Failed to send message:", error);
@@ -147,7 +157,6 @@ const ChatPage = ({ messages, projectId, mode }: ChatPageProps) => {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // Clean Custom Parser (No Purple on AI text contents)
   const renderMessageContent = (content: string, msgId: string) => {
     const parts = content.split(/(```[\s\S]*?```)/g);
 
@@ -189,7 +198,6 @@ const ChatPage = ({ messages, projectId, mode }: ChatPageProps) => {
         );
       }
 
-      // Inline Helper for double asterisks (**bold** converted to premium White)
       const renderBoldText = (text: string) => {
         const textParts = text.split(/(\*\*[\s\S]*?\*\*)/g);
         return textParts.map((subPart, subIndex) => {
@@ -204,7 +212,6 @@ const ChatPage = ({ messages, projectId, mode }: ChatPageProps) => {
         });
       };
 
-      // Header Parsing Filter (`###` converted to clean Bold White text)
       if (part.trim().startsWith("#")) {
         const cleanHeader = part.replace(/^#+\s*/, "");
         return (
@@ -223,74 +230,68 @@ const ChatPage = ({ messages, projectId, mode }: ChatPageProps) => {
   };
 
   return (
-    <div className="relative min-h-screen bg-black w-full flex flex-col justify-between">
-      
-      {/* Scrollable Chat Window Area with Custom Slate-Gray Scrollbar Style */}
-      <div className="flex-1 overflow-y-auto p-4 pb-36 w-full flex flex-col items-center pt-8 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
-        <div className="w-full max-w-4xl space-y-6">
-          {chatMessages.map((msg, idx) => (
-            <ChatMessageItem 
-              key={`${msg.id}-${idx}`} // 🎯 Dynamic Unique Key Fallback lagaya hai string fix ke sath
-              msg={msg} 
-              mode={mode} 
-              renderMessageContent={renderMessageContent} 
-            />
-          ))}
-          
-          {/* Think Loader */}
-          {loading && (
-            <div className="flex justify-start">
-              <div className="bg-zinc-900/80 border border-zinc-800/80 text-zinc-400 text-xs rounded-full px-5 py-2.5 animate-pulse flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-purple-500 animate-ping"></span>
-                AeroCode is processing with {mode}...
+    <div className="min-h-screen bg-black text-white font-sans antialiased">
+      {/* 1. Sidebar Navigation */}
+      <Sidebar />
+
+      {/* 2. Main Chat View Content Layout Frame */}
+      <div className="md:pl-64 min-h-screen flex flex-col justify-between relative">
+        <div className="flex-1 overflow-y-auto p-4 pb-36 w-full flex flex-col items-center pt-8 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
+          <div className="w-full max-w-4xl space-y-6">
+            {chatMessages.map((msg, idx) => (
+              <ChatMessageItem
+                key={`${msg.id}-${idx}`}
+                msg={msg}
+                mode={mode}
+                renderMessageContent={renderMessageContent}
+              />
+            ))}
+
+            {loading && (
+              <div className="flex justify-start">
+                <div className="bg-zinc-900/80 border border-zinc-800/80 text-zinc-400 text-xs rounded-full px-5 py-2.5 animate-pulse flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-purple-500 animate-ping"></span>
+                  AeroCode is processing with {mode}...
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Anchor Element for Auto Scroll */}
-          <div ref={messagesEndRef} />
+            <div ref={messagesEndRef} />
+          </div>
         </div>
-      </div>
 
-      {/* Multi-line Input Box Section */}
-      <div className="fixed bottom-0 left-0 w-full flex justify-center bg-gradient-to-t from-black via-black/90 to-transparent pt-10 pb-6 z-50">
-        <div className="w-full max-w-4xl px-4">
-          <div className="flex items-end bg-[#141415] border border-zinc-800/90 rounded-2xl p-2 pl-4 shadow-2xl focus-within:border-purple-500/80 focus-within:ring-2 focus-within:ring-purple-500/10 transition-all duration-300">
-            <textarea
-              ref={textareaRef}
-              rows={1}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              disabled={loading}
-              placeholder="Type a message..."
-              className="w-full bg-transparent text-white placeholder-zinc-500 text-sm py-2 outline-none resize-none max-h-[200px] min-h-[36px] leading-relaxed custom-scrollbar disabled:opacity-50"
-            />
-            <button
-              onClick={handleSend}
-              disabled={loading || !prompt.trim()}
-              className="p-3 mb-0.5 mx-1 cursor-pointer bg-purple-600 hover:bg-purple-700 text-white rounded-xl transition-all duration-200 flex items-center justify-center shrink-0 shadow-lg shadow-purple-600/20 disabled:bg-zinc-900 disabled:text-zinc-600 disabled:shadow-none"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2.5}
-                stroke="currentColor"
-                className="w-4 h-4"
+        {/* Floating Input Controller */}
+        <div className="fixed bottom-0 left-0 md:left-64 right-0 flex justify-center bg-gradient-to-t from-black via-black/90 to-transparent pt-10 pb-6 z-40">
+          <div className="w-full max-w-4xl px-4">
+            <div className="flex items-end bg-[#141415] border border-zinc-800/90 rounded-2xl p-2 pl-4 shadow-2xl focus-within:border-purple-500/80 focus-within:ring-2 focus-within:ring-purple-500/10 transition-all duration-300">
+              <textarea
+                ref={textareaRef}
+                rows={1}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                disabled={loading}
+                placeholder="Type a message..."
+                className="w-full bg-transparent text-white placeholder-zinc-500 text-sm py-2 outline-none resize-none max-h-[200px] min-h-[36px] leading-relaxed custom-scrollbar disabled:opacity-50"
+              />
+              <button
+                onClick={handleSend}
+                disabled={loading || !prompt.trim()}
+                className="p-3 mb-0.5 mx-1 cursor-pointer bg-purple-600 hover:bg-purple-700 text-white rounded-xl transition-all duration-200 flex items-center justify-center shrink-0 shadow-lg shadow-purple-600/20 disabled:bg-zinc-900 disabled:text-zinc-600 disabled:shadow-none"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-              </svg>
-            </button>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
-
     </div>
   );
 };
