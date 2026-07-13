@@ -58,7 +58,7 @@ const Home = () => {
       }
     } catch (error) {
       console.error("Network/Internal Server Database Context Exception:", error);
-      setErrorMessage("Something went wrong! Check your network database stream setup.");
+      setErrorMessage("Please login first");
       setLoading(false);
     }
   };

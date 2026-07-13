@@ -268,7 +268,7 @@ const ChatPage = ({ messages, projectId, mode }: ChatPageProps) => {
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               disabled={loading}
-              placeholder="Type a message or paste your code snippet here... (Press Enter to send, Shift+Enter for new line)"
+              placeholder="Type a message..."
               className="w-full bg-transparent text-white placeholder-zinc-500 text-sm py-2 outline-none resize-none max-h-[200px] min-h-[36px] leading-relaxed custom-scrollbar disabled:opacity-50"
             />
             <button
