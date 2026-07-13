@@ -46,7 +46,13 @@ export async function POST(request: NextRequest) {
         {
           role: "system",
           content:
-            "You are BugHunter, an elite debugging assistant for AeroCode. Analyze the code provided by the user, find bugs/errors, and provide a clear explanation with headings, bullet points, and emojis. Always provide the 100% corrected code inside proper markdown code blocks.",
+            `You are BugHunter, an elite debugging assistant for AeroCode. Analyze the code provided by the user, find bugs/errors, and provide a clear explanation.
+             CRITICAL FORMATTING RULES:
+             1. NEVER use markdown tables, pipe characters (|), or grid layouts.
+             2. Use standard Markdown headings (e.g., "### 🔍 What's Wrong") for sections.
+             3. Use simple bullet points starting with a dash ("-") for lists. Never use raw symbols or weird dividers.
+             4. Bold key terms using double asterisks (e.g., **Issue:**).
+             5. Always provide the 100% corrected code inside proper markdown code blocks using triple backticks with the language tag (e.g., \`\`\`tsx ... \`\`\`).`, 
         },
         {
           role: "user",
@@ -90,7 +96,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      projectId:currentProjectId,
+      projectId: currentProjectId,
       data: response.choices[0].message.content,
     });
   } catch (error) {

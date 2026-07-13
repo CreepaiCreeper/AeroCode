@@ -1,10 +1,36 @@
-"use client"; // 👈 State use karne ke liye Next.js me yeh zaroori hai
-import { Bug, Compass } from "lucide-react"; // Compass icon Blueprint ke liye premium lagega
+"use client";
+import { Bug, Compass } from "lucide-react";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const Home = () => {
-  // Is state se pata chalega kaun sa mode selected hai: 'bughunter' ya 'blueprint'
   const [activeMode, setActiveMode] = useState("bughunter");
+  const [prompt, setPrompt] = useState("");
+  const router = useRouter();
+
+  const handleSubmit = async () => {
+    if (!prompt.trim()) {
+      console.log("Prompt is requerd");
+      return;
+    }
+    console.log(prompt);
+
+    const endPoint =
+      activeMode === "bughunter"
+        ? "/api/chat/bughunter"
+        : "/api/chat/blueprint";
+
+    const response = await fetch(endPoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ prompt }),
+    });
+    const data = await response.json();
+    console.log(data);
+    router.push(`/c/${data.projectId}`);
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center">
@@ -26,6 +52,8 @@ const Home = () => {
           <div className="flex items-center bg-[#141414] border border-zinc-800/80 rounded-full p-1 pl-4 shadow-2xl focus-within:border-purple-500 focus-within:ring-2 focus-within:ring-purple-500/20 transition-all duration-300">
             <input
               type="text"
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
               placeholder={
                 activeMode === "bughunter"
                   ? "Ask BugHunter to find bugs and clean your code..."
@@ -33,7 +61,10 @@ const Home = () => {
               }
               className="w-full bg-transparent text-white placeholder-zinc-500 text-sm py-2 outline-none text-[14px]"
             />
-            <button className="p-2.5 mx-1 cursor-pointer bg-purple-600 hover:bg-purple-700 text-white rounded-full transition-all duration-200 flex items-center justify-center group shrink-0 shadow-md shadow-purple-600/10">
+            <button
+              onClick={handleSubmit}
+              className="p-2.5 mx-1 cursor-pointer bg-purple-600 hover:bg-purple-700 text-white rounded-full transition-all duration-200 flex items-center justify-center group shrink-0 shadow-md shadow-purple-600/10"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
@@ -76,7 +107,7 @@ const Home = () => {
           >
             <Compass size={14} />
             <span>Blueprint</span>
-          </button> 
+          </button>
         </div>
       </div>
     </div>
