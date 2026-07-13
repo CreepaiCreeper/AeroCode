@@ -8,6 +8,7 @@ const Home = () => {
   const [activeMode, setActiveMode] = useState("bughunter");
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const router = useRouter();
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -23,6 +24,7 @@ const Home = () => {
     if (!prompt.trim() || loading) return;
     
     setLoading(true);
+    setErrorMessage(null); // Clear previous errors cleanly
 
     const endPoint =
       activeMode === "bughunter"
@@ -38,7 +40,6 @@ const Home = () => {
         body: JSON.stringify({ prompt }),
       });
 
-      // 🎯 Fix 1: Response status check validation
       if (!response.ok) {
         throw new Error(`Server responded with status: ${response.status}`);
       }
@@ -46,19 +47,18 @@ const Home = () => {
       const data = await response.json();
       console.log("Response Data:", data);
 
-      // 🎯 Fix 2: Explicit structural check taaki undefined url na bane
       const targetId = data.projectId || data.id || (data.data && data.data.projectId);
 
       if (targetId) {
         router.push(`/c/${targetId}`);
       } else {
-        console.error("Error: projectId missing from server response object structure", data);
-        alert("Server failed to generate a valid project ID. Please check backend logs.");
+        console.error("Missing structural ID key identifier parameter", data);
+        setErrorMessage("Project creation failed. Please check server responses.");
         setLoading(false);
       }
     } catch (error) {
-      console.error("Production Network/Internal Server Error:", error);
-      alert("Internal Server Error! Check Vercel logs for database connection issues.");
+      console.error("Network/Internal Server Database Context Exception:", error);
+      setErrorMessage("Something went wrong! Check your network database stream setup.");
       setLoading(false);
     }
   };
@@ -123,6 +123,14 @@ const Home = () => {
               )}
             </button>
           </div>
+
+          {/* Dynamic Non-Blocking Inline Error Handling Info Display instead of alert() */}
+          {errorMessage && (
+            <div className="text-xs font-medium text-red-500 mt-3 pl-2 transition-all duration-200 animate-pulse">
+              ⚠️ {errorMessage}
+            </div>
+          )}
+
           <div className="text-[11px] text-zinc-600 mt-2 pl-2 select-none">
             Press Enter to send, Shift + Enter for new lines
           </div>
