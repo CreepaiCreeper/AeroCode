@@ -9,10 +9,9 @@ const Home = () => {
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-
+  
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // 🎯 Auto-resize textarea height as content grows up to max-height
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
@@ -21,13 +20,9 @@ const Home = () => {
   }, [prompt]);
 
   const handleSubmit = async () => {
-    if (!prompt.trim() || loading) {
-      console.log("Prompt is required");
-      return;
-    }
-
+    if (!prompt.trim() || loading) return;
+    
     setLoading(true);
-    console.log(prompt);
 
     const endPoint =
       activeMode === "bughunter"
@@ -42,21 +37,36 @@ const Home = () => {
         },
         body: JSON.stringify({ prompt }),
       });
+
+      // 🎯 Fix 1: Response status check validation
+      if (!response.ok) {
+        throw new Error(`Server responded with status: ${response.status}`);
+      }
+
       const data = await response.json();
-      console.log(data);
-      router.push(`/c/${data.projectId}`);
+      console.log("Response Data:", data);
+
+      // 🎯 Fix 2: Explicit structural check taaki undefined url na bane
+      const targetId = data.projectId || data.id || (data.data && data.data.projectId);
+
+      if (targetId) {
+        router.push(`/c/${targetId}`);
+      } else {
+        console.error("Error: projectId missing from server response object structure", data);
+        alert("Server failed to generate a valid project ID. Please check backend logs.");
+        setLoading(false);
+      }
     } catch (error) {
-      console.error("Failed to generate project:", error);
+      console.error("Production Network/Internal Server Error:", error);
+      alert("Internal Server Error! Check Vercel logs for database connection issues.");
       setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center relative overflow-hidden">
-      {/* Background Subtle Gradient Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-purple-600/5 blur-[120px] rounded-full pointer-events-none" />
 
-      {/* Logo Section */}
       <div className="flex gap-2 justify-center z-10 select-none">
         <span className="text-5xl font-semibold text-purple-600 tracking-tight">
           {"{ "}
@@ -67,9 +77,7 @@ const Home = () => {
         </h1>
       </div>
 
-      {/* Main Container for Input and Badges */}
       <div className="flex flex-col items-center mt-10 w-full z-10">
-        {/* Dynamic Multi-line Input Box Wrapper */}
         <div className="w-full max-w-3xl px-4">
           <div className="flex items-end bg-[#111112] border border-zinc-800/90 rounded-2xl p-2 pl-4 shadow-2xl focus-within:border-purple-500/80 focus-within:ring-2 focus-within:ring-purple-500/10 transition-all duration-300">
             <textarea
@@ -91,29 +99,25 @@ const Home = () => {
               }
               className="w-full bg-transparent text-white placeholder-zinc-500 text-sm py-2 outline-none resize-none max-h-[200px] min-h-[36px] leading-relaxed scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent disabled:opacity-50"
             />
-
-            {/* Premium Up Arrow Submit Button */}
+            
             <button
               onClick={handleSubmit}
               disabled={loading || !prompt.trim()}
               className="p-2.5 mb-0.5 mx-1 cursor-pointer bg-purple-600 hover:bg-purple-700 disabled:bg-zinc-900 text-white disabled:text-zinc-600 rounded-xl transition-all duration-200 flex items-center justify-center shrink-0 shadow-lg shadow-purple-600/20 disabled:shadow-none group"
-              title="Send message"
             >
               {loading ? (
                 <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
               ) : (
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
                   viewBox="0 0 24 24"
-                  strokeWidth={2.5}
-                  stroke="currentColor"
-                  className="w-4 h-4"
+                  fill="currentColor"
+                  className="w-4 h-4 transform group-hover:-translate-y-0.5 transition-transform duration-200"
                 >
                   <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"
+                    fillRule="evenodd"
+                    d="M11.47 2.47a.75.75 0 0 1 1.06 0l7.5 7.5a.75.75 0 1 1-1.06 1.06l-6.22-6.22V21a.75.75 0 0 1-1.5 0V4.81l-6.22 6.22a.75.75 0 1 1-1.06-1.06l7.5-7.5Z"
+                    clipRule="evenodd"
                   />
                 </svg>
               )}
@@ -124,9 +128,7 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Mode Badges */}
         <div className="flex gap-3 mt-6 justify-center">
-          {/* Bug Hunter Button */}
           <button
             onClick={() => !loading && setActiveMode("bughunter")}
             disabled={loading}
@@ -140,7 +142,6 @@ const Home = () => {
             <span>Bug Hunter</span>
           </button>
 
-          {/* Blueprint Button */}
           <button
             onClick={() => !loading && setActiveMode("blueprint")}
             disabled={loading}
