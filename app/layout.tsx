@@ -1,3 +1,4 @@
+// app/layout.tsx (Global Layout - No Sidebar Here!)
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -14,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "AeroCode — Next-Gen AI Code Companion",
-  description: "Debug code, generate architectural blueprints, and hunt bugs seamlessly with AeroCode. Your ultimate full-stack AI development workspace built for elite developers.",
+  description: "Debug code, generate architectural blueprints, and hunt bugs.",
 };
 
 export default function RootLayout({
@@ -27,7 +28,9 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full bg-black text-white" suppressHydrationWarning>
+        {children}
+      </body>
     </html>
   );
 }

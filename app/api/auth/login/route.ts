@@ -7,7 +7,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { email, password } = body;
-    
+
     if (!email || !password) {
       return NextResponse.json(
         {
@@ -17,20 +17,20 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    
+
     const findUser = await Prisma.user.findUnique({
       where: {
         email,
       },
     });
-    
+
     if (!findUser) {
       return NextResponse.json(
         {
           success: false,
           message: "User does not exist",
         },
-        { status: 400 } 
+        { status: 400 },
       );
     }
 
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
           success: false,
           message: "Password does not match",
         },
-        { status: 401 } 
+        { status: 401 },
       );
     }
 
@@ -52,13 +52,17 @@ export async function POST(request: Request) {
         email: findUser.email,
       },
       process.env.JWT_SECRET!,
-      { expiresIn: "15d" }
+      { expiresIn: "15d" },
     );
 
     const response = NextResponse.json(
       {
         success: true,
         message: "Login successfully",
+        user: {
+          name: findUser.name,
+          image: findUser.image,
+        },
       },
       { status: 200 },
     );
@@ -71,7 +75,6 @@ export async function POST(request: Request) {
     });
 
     return response;
-
   } catch (error) {
     console.log(error);
     return NextResponse.json(

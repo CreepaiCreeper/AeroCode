@@ -1,8 +1,16 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Check, Copy, Terminal, ChevronDown, ChevronUp } from "lucide-react";
-import Sidebar from "@/components/Sidebar";
+import {
+  Check,
+  Copy,
+  Terminal,
+  ChevronDown,
+  ChevronUp,
+  Lock,
+  MessageSquare,
+} from "lucide-react";
+import { useAuth } from "@/app/hooks/useAuth";
 
 type Message = {
   id: string;
@@ -46,7 +54,7 @@ const ChatMessageItem = ({
           <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">
             {msg.role === "user"
               ? "You"
-              : `${mode === "blueprint" ? "📐 Blueprint" : "🪲 BugHunter"} AI`}
+              : `${mode === "blueprint" ? "📐 Blueprint" : mode === "normal" ? "💬 AeroCode" : "🪲 BugHunter"} AI`}
           </span>
         </div>
 
@@ -84,9 +92,26 @@ const ChatPage = ({ messages, projectId, mode }: ChatPageProps) => {
   const [chatMessages, setChatMessages] = useState<Message[]>(messages);
   const [loading, setLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  
+  // 🌟 Hydration Mismatch Safety Hook
+  const [hasMounted, setHasMounted] = useState(false);
+  const [authStatus, setAuthStatus] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const isLoggedIn = useAuth();
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (hasMounted) {
+      const localCheck = typeof window !== "undefined" && localStorage.getItem("isLoggedIn") === "true";
+      setAuthStatus(isLoggedIn ?? localCheck);
+    }
+  }, [isLoggedIn, hasMounted]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -104,7 +129,7 @@ const ChatPage = ({ messages, projectId, mode }: ChatPageProps) => {
   }, [prompt]);
 
   const handleSend = async () => {
-    if (!prompt.trim() || loading) return;
+    if (!authStatus || !prompt.trim() || loading) return;
 
     const userMessage = {
       id: `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -118,14 +143,17 @@ const ChatPage = ({ messages, projectId, mode }: ChatPageProps) => {
     setLoading(true);
 
     try {
+      // Endpoint Selector based on mode
       const apiRoute =
-        mode === "blueprint" ? "/api/chat/blueprint" : "/api/chat/bughunter";
+        mode === "normal"
+          ? "/api/chat/normal"
+          : mode === "blueprint"
+          ? "/api/chat/blueprint"
+          : "/api/chat/bughunter";
 
       const response = await fetch(apiRoute, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: currentPrompt,
           projectId: projectId,
@@ -229,13 +257,18 @@ const ChatPage = ({ messages, projectId, mode }: ChatPageProps) => {
     });
   };
 
+  // 🌟 Hydration mismatch se bachane ke liye pehla render standard rakhein
+  if (!hasMounted) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-black text-white font-sans antialiased">
-      {/* 1. Sidebar Navigation */}
-      <Sidebar />
-
-      {/* 2. Main Chat View Content Layout Frame */}
-      <div className="md:pl-64 min-h-screen flex flex-col justify-between relative">
+      <div className="md:pl-[260px] min-h-screen flex flex-col justify-between relative">
         <div className="flex-1 overflow-y-auto p-4 pb-36 w-full flex flex-col items-center pt-8 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
           <div className="w-full max-w-4xl space-y-6">
             {chatMessages.map((msg, idx) => (
@@ -261,9 +294,15 @@ const ChatPage = ({ messages, projectId, mode }: ChatPageProps) => {
         </div>
 
         {/* Floating Input Controller */}
-        <div className="fixed bottom-0 left-0 md:left-64 right-0 flex justify-center bg-gradient-to-t from-black via-black/90 to-transparent pt-10 pb-6 z-40">
+        <div className="fixed bottom-0 left-0 md:left-[260px] right-0 flex justify-center bg-gradient-to-t from-black via-black/90 to-transparent pt-10 pb-6 z-40">
           <div className="w-full max-w-4xl px-4">
-            <div className="flex items-end bg-[#141415] border border-zinc-800/90 rounded-2xl p-2 pl-4 shadow-2xl focus-within:border-purple-500/80 focus-within:ring-2 focus-within:ring-purple-500/10 transition-all duration-300">
+            <div
+              className={`flex items-end bg-[#141415] border rounded-2xl p-2 pl-4 shadow-2xl transition-all duration-300 ${
+                authStatus
+                  ? "border-zinc-800/90 focus-within:border-purple-500/80 focus-within:ring-2 focus-within:ring-purple-500/10"
+                  : "border-red-500/20 bg-red-950/5 select-none"
+              }`}
+            >
               <textarea
                 ref={textareaRef}
                 rows={1}
@@ -275,19 +314,30 @@ const ChatPage = ({ messages, projectId, mode }: ChatPageProps) => {
                 }}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                disabled={loading}
-                placeholder="Type a message..."
+                disabled={loading || !authStatus}
+                placeholder={
+                  authStatus
+                    ? "Type a message..."
+                    : "Please login from top-right corner to start chatting..."
+                }
                 className="w-full bg-transparent text-white placeholder-zinc-500 text-sm py-2 outline-none resize-none max-h-[200px] min-h-[36px] leading-relaxed custom-scrollbar disabled:opacity-50"
               />
-              <button
-                onClick={handleSend}
-                disabled={loading || !prompt.trim()}
-                className="p-3 mb-0.5 mx-1 cursor-pointer bg-purple-600 hover:bg-purple-700 text-white rounded-xl transition-all duration-200 flex items-center justify-center shrink-0 shadow-lg shadow-purple-600/20 disabled:bg-zinc-900 disabled:text-zinc-600 disabled:shadow-none"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-                </svg>
-              </button>
+
+              {authStatus ? (
+                <button
+                  onClick={handleSend}
+                  disabled={loading || !prompt.trim()}
+                  className="p-3 mb-0.5 mx-1 cursor-pointer bg-purple-600 hover:bg-purple-700 text-white rounded-xl transition-all duration-200 flex items-center justify-center shrink-0 shadow-lg shadow-purple-600/20 disabled:bg-zinc-900 disabled:text-zinc-600 disabled:shadow-none"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                  </svg>
+                </button>
+              ) : (
+                <div className="p-3 mb-0.5 mx-1 text-red-400 bg-red-500/10 rounded-xl border border-red-500/20 flex items-center justify-center shrink-0 shadow-sm" title="Authentication Required">
+                  <Lock size={16} className="animate-pulse" />
+                </div>
+              )}
             </div>
           </div>
         </div>

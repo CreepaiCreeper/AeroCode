@@ -33,16 +33,23 @@ const Page = () => {
         }),
       });
 
+      const data = await res.json();
+
       if (res.ok) {
         setmessage("Logged in Successfully");
         setIsSuccess(true);
+        localStorage.setItem("isLoggedIn", "true");
+
+        if (data.user && data.user.name) {
+          localStorage.setItem("userName", data.user.name);
+        }
+
+        window.dispatchEvent(new Event("auth-change"));
 
         setTimeout(() => {
-          router.push("/");
-        }, 1500);
+          window.location.href = "/";
+        }, 1000);
       } else {
-        
-        const data = await res.json();
         setmessage(data.message || "Invalid Email or Password");
         setIsSuccess(false);
       }
@@ -54,10 +61,8 @@ const Page = () => {
 
   return (
     <div className="flex h-[100svh] items-center justify-center bg-slate-950 px-4 py-12 selection:bg-purple-500 selection:text-white">
-      {/* Main Login Card */}
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/[0.02] p-8 backdrop-blur-md shadow-2xl shadow-purple-950/20">
         <div className="flex flex-col items-center"> 
-          {/* Header */}
           <h1 className="text-4xl font-bold tracking-tight text-white mb-2 select-none">
             Welcome Back
           </h1>
@@ -66,7 +71,6 @@ const Page = () => {
           </p>
 
           <form className="w-full space-y-5" onSubmit={handleSubmit}>
-            {/* Email Input */}
             <div className="relative flex flex-col justify-center">
               <span className="absolute left-4 text-zinc-400">
                 <MailIcon className="h-5 w-5" />
@@ -80,7 +84,6 @@ const Page = () => {
               />
             </div>
 
-            {/* Password Input */}
             <div className="relative flex flex-col justify-center">
               <span className="absolute left-4 text-zinc-400">
                 <LockIcon className="h-5 w-5" />
@@ -94,12 +97,10 @@ const Page = () => {
               />
             </div>
 
-            {/* Submit Button */}
             <button type="submit" className="w-full bg-purple-600 text-white font-medium h-12 rounded-xl mt-2 shadow-lg shadow-purple-600/20 hover:bg-purple-700 active:scale-[0.98] transition-all duration-200 cursor-pointer">
               Login
             </button>
 
-            {/* Footer Text */}
             <div className="text-center text-sm text-zinc-400 mt-4">
               Don't have an account?{" "}
               <Link

@@ -32,16 +32,17 @@ export async function POST(request: NextRequest) {
 
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-    let projectTitle = "BugHunter";
+    // 1. Title Generator Prompt
+    let projectTitle = "New Chat";
     if (!body.projectId) {
       try {
         const titleResponse = await groq.chat.completions.create({
-          model: "llama-3.1-8b-instant", 
+          model: "openai/gpt-oss-120b", 
           messages: [
             {
               role: "system",
               content:
-                "You are a helper that generates a super short, clean, and relevant debugging project title (maximum 3 to 4 words) based on the user's bug report or code. Do not include any quotes, markdown, or extra explanations. Just give the pure title text.",
+                "You are a helper that generates a clean, and relevant chat title (maximum 3 to 4 words) based on the user's message or topic discussed. Do not include any quotes, markdown, or extra explanations. Just give the pure title text.",
             },
             {
               role: "user",
@@ -50,33 +51,25 @@ export async function POST(request: NextRequest) {
           ],
         });
         projectTitle =
-          titleResponse.choices[0].message.content?.trim() || "BugHunter";
+          titleResponse.choices[0].message.content?.trim() || "New Chat";
       } catch (err) {
         console.error("Title generation failed, using default", err);
       }
     }
 
+    // 2. Main Chat Prompt (Language Matching & Reality Check Added 🌟)
     const response = await groq.chat.completions.create({
       model: "openai/gpt-oss-120b",
       messages: [
         {
           role: "system",
-          content: `You are BugHunter 🪲, the elite cybersecurity, code dissection, and full-stack debugging engine for AeroCode. Your absolute priority is to hunt down bugs, identify critical vulnerabilities, and provide flawless, production-ready fixes with maximum clarity and premium developer vibes!
+          content: `You are AeroCode AI, a versatile, smart, and friendly general-purpose chat companion. Your sole job is to talk normally, discuss topics, and evaluate plans based on pure reality.
 
-CRITICAL FORMATTING & EXPLANATION RULES:
-1. NO TABLES OR GRIDS: Never use markdown tables, pipe characters (|), HTML formatting, or grid layouts. All structured data or file structures must be written as clean lists, clean text blocks, or formatted code snippets.
-2. HIGH-ENGAGEMENT VISUALS: Always use highly relevant emojis (e.g., 🪲, 🔍, 🛠️, 💡, ⚠️, 🚀, 🛡️, 📦) to structure your response, highlight important points, and keep the reading flow extremely engaging and easy to understand.
-3. EXPLAIN THE "WHY" BEFORE THE "FIX":
-   - 🔍 **What's Wrong:** Start with a breakdown of the issue. Explain what is causing the error or vulnerability in simple, solid terms so the user actually learns.
-   - ⚠️ **The Impact:** Briefly explain what will go wrong if this isn't fixed (e.g., memory leaks, crashes, security risks).
-   - 🛠️ **The Fix:** Provide the clean explanation.
-4. 100% COMPLETE CODE BLOCKS: When giving the fixed code, always provide the 100% complete corrected code file inside proper markdown code blocks with the correct language tag (e.g., \`\`\`tsx ... \`\`\` or \`\`\`nodejs ... \`\`\`). Never write partial code or leave "rest of code here" comments unless explicitly asked.
-5. CLEAN LISTS: Use simple dashes ("-") for lists. Bold key directories, configurations, or variables using double asterisks (e.g., **Error Area:**, **jwt.verify()**).
-
-DYNAMIC LANGUAGE & TONE MIRRORING:
-- You possess native-level mastery of every language on Earth, including mixed colloquial styles (e.g., Hinglish, Spanenglish, dialect blends).
-- Closely analyze the user's prompt to detect their exact language, tone, and vocabulary choice.
-- You MUST reply using the exact same language and communication style the user used. If they ask in Hinglish, reply with elite technical analysis in Hinglish. If they ask in Japanese, reply in Japanese. Match them perfectly!`,
+RULES:
+1. LANGUAGE MATCHING: Strictly respond in the exact same language, slang, or script used by the user. If the user talks in Hinglish/Roman Urdu, reply in Hinglish/Roman Urdu. If they use Turkish, English, or any other language, mirror it perfectly. Never force English if the user is using another language.
+2. NO AUTOMATIC CODING: Do not assume this is a coding session. Do not give code blocks or technical debugging text unless the user explicitly asks for code. Talk like a human peer.
+3. ABSOLUTE REALITY: If the user shares an idea, routine, or concept, analyze it with 100% brutal honesty. No sugarcoating, no fake compliments. Speak with grounded facts and reality.
+4. TONALITY: Casual, highly clear, direct, and practical. Act like a real-life supportive companion who gives real data and true decisions.`,
         },
         {
           role: "user",
@@ -105,7 +98,7 @@ DYNAMIC LANGUAGE & TONE MIRRORING:
       data: {
         role: "user",
         content: body.prompt,
-        mode: "bughunter",
+        mode: "normal",
         projectId: currentProjectId,
       },
     });
@@ -114,7 +107,7 @@ DYNAMIC LANGUAGE & TONE MIRRORING:
       data: {
         role: "assistant",
         content: aiResponse || "",
-        mode: "bughunter",
+        mode: "normal",
         projectId: currentProjectId,
       },
     });

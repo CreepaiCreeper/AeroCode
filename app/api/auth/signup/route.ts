@@ -36,21 +36,23 @@ export async function POST(request: Request) {
       },
     });
 
-    // 1. JWT Token banaya (15 days expiry ke saath)
     const token = jwt.sign(
       { id: createUser.id, email: createUser.email },
       process.env.JWT_SECRET!,
-      { expiresIn: "15d" } // 15 din me expire hoga
+      { expiresIn: "15d" }
     );
 
-    // 2. Response object taiyar kiya
-    const response = NextResponse.json(
-      {
-        success: true,
-        message: "Account created successfully",
-      },
-      { status: 201 },
-    );
+const response = NextResponse.json(
+  {
+    success: true,
+    message: "Account created successfully",
+    user: {
+      name: createUser.name,
+      image: createUser.image,
+    }
+  },
+  { status: 201 },
+);
 
     response.cookies.set("token", token, {
       httpOnly: true, 
