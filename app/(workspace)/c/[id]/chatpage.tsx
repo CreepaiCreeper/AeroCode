@@ -53,7 +53,7 @@ const ChatMessageItem = ({
           <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">
             {msg.role === "user"
               ? "You"
-              : `${mode === "blueprint" ? "📐 Blueprint" : mode === "normal" ? "💬 AeroCode" : "🪲 BugHunter"} AI`}
+              : `${mode === "blueprint" ? "📐 Blueprint" : "🪲 BugHunter"} AI`}
           </span>
         </div>
 
@@ -142,9 +142,7 @@ const ChatPage = ({ messages, projectId, mode }: ChatPageProps) => {
 
     try {
       const apiRoute =
-        mode === "normal"
-          ? "/api/chat/normal"
-          : mode === "blueprint"
+        mode === "blueprint"
           ? "/api/chat/blueprint"
           : "/api/chat/bughunter";
 
@@ -289,7 +287,6 @@ const ChatPage = ({ messages, projectId, mode }: ChatPageProps) => {
           </div>
         </div>
 
-        {/* Floating Input Controller */}
         <div className="fixed bottom-0 left-0 md:left-[260px] right-0 flex justify-center bg-gradient-to-t from-black via-black/90 to-transparent pt-10 pb-6 z-40">
           <div className="w-full max-w-4xl px-4">
             <div

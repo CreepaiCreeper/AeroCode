@@ -1,13 +1,13 @@
 "use client";
 
-import { Bug, Compass, LogIn, UserPlus, MessageSquare } from "lucide-react";
+import { Bug, Compass, LogIn, UserPlus } from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/hooks/useAuth"; 
 
 const Home = () => {
-  const [activeMode, setActiveMode] = useState("normal");
+  const [activeMode, setActiveMode] = useState("blueprint");
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -52,7 +52,6 @@ const Home = () => {
     }
   }, [prompt]);
 
-  // 🛠️ FIX: Completed missing handleSubmit logic for streaming/creating dynamic project workspaces
   const handleSubmit = async () => {
     if (!prompt.trim() || loading) return;
 
@@ -76,9 +75,7 @@ const Home = () => {
       }
 
       const apiRoute =
-        activeMode === "normal"
-          ? "/api/chat/normal"
-          : activeMode === "blueprint"
+        activeMode === "blueprint"
           ? "/api/chat/blueprint"
           : "/api/chat/bughunter";
 
@@ -91,7 +88,6 @@ const Home = () => {
       const data = await chatResponse.json();
 
       if (data.success && data.projectId) {
-        // Dynamic push to workspace channel
         router.push(`/project/${data.projectId}`);
       } else {
         setErrorMessage(data.message || "Something went wrong while processing.");
@@ -106,10 +102,8 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4 relative overflow-hidden font-sans">
-      {/* Background radial highlight */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-purple-600/10 blur-[120px] rounded-full pointer-events-none" />
 
-      {/* Header Authentication Indicators */}
       <div className="absolute top-6 right-6 flex items-center gap-3">
         {!authStatus ? (
           <>
@@ -130,7 +124,6 @@ const Home = () => {
       </div>
 
       <div className="w-full max-w-3xl space-y-8 text-center relative z-10">
-        {/* Logo and Brand Statement */}
         <div className="space-y-3">
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white select-none">
             AeroCode<span className="text-purple-500">.AI</span>
@@ -140,19 +133,8 @@ const Home = () => {
           </p>
         </div>
 
-        {/* Engine Selection Matrix */}
-        <div className="grid grid-cols-3 gap-3 max-w-xl mx-auto bg-[#0d0d0e] border border-zinc-900 p-1.5 rounded-2xl shadow-xl">
-          <button
-            onClick={() => setActiveMode("normal")}
-            className={`flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-4 text-xs font-bold rounded-xl transition-all duration-200 cursor-pointer ${
-              activeMode === "normal"
-                ? "bg-purple-600 text-white shadow-md shadow-purple-600/10"
-                : "text-zinc-400 hover:text-white hover:bg-zinc-950"
-            }`}
-          >
-            <MessageSquare size={14} />
-            <span>Normal Chat</span>
-          </button>
+        {/* Updated Dual-Engine Toggle Matrix */}
+        <div className="grid grid-cols-2 gap-3 max-w-md mx-auto bg-[#0d0d0e] border border-zinc-900 p-1.5 rounded-2xl shadow-xl">
           <button
             onClick={() => setActiveMode("blueprint")}
             className={`flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-4 text-xs font-bold rounded-xl transition-all duration-200 cursor-pointer ${
@@ -173,11 +155,10 @@ const Home = () => {
             }`}
           >
             <Bug size={14} />
-            <span>BugHunter </span>
+            <span>BugHunter</span>
           </button>
         </div>
 
-        {/* Dynamic Prompt Form Controller */}
         <div className="w-full bg-[#0d0d0e] border border-zinc-900 rounded-3xl p-3 shadow-2xl focus-within:border-purple-500/40 transition-colors">
           <div className="flex items-end pl-3 pr-1 py-1">
             <textarea
@@ -192,9 +173,7 @@ const Home = () => {
                 }
               }}
               placeholder={
-                activeMode === "normal"
-                  ? "Talk to AeroCode AI about anything under reality..."
-                  : activeMode === "blueprint"
+                activeMode === "blueprint"
                   ? "Describe a platform feature or system concept to build a layout blueprint..."
                   : "Paste broken code stacks, logs, or error blocks here to analyze bugs..."
               }
@@ -216,7 +195,6 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Error Messaging Block */}
         {errorMessage && (
           <div className="max-w-md mx-auto text-xs bg-red-500/5 text-red-400 border border-red-500/10 px-4 py-3 rounded-xl animate-fade-in select-none">
             ⚠️ {errorMessage}
