@@ -118,7 +118,7 @@ const Home = () => {
           </>
         ) : (
           <div className="text-xs font-bold text-purple-400 bg-purple-500/5 px-4 py-2 rounded-xl border border-purple-500/10 tracking-wide select-none">
-            ⚡ Connected Workspace
+            
           </div>
         )}
       </div>
