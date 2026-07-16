@@ -55,7 +55,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 🌟 FETCH PREVIOUS CHAT HISTORY (Context Maintenance)
     let previousMessages: { role: "user" | "assistant"; content: string }[] = [];
     if (body.projectId) {
       const dbMessages = await Prisma.message.findMany({
@@ -82,11 +81,11 @@ CRITICAL FORMATTING & EXPLANATION RULES:
 4. 100% COMPLETE CODE BLOCKS: When giving the fixed code, always provide the 100% complete corrected code file inside proper markdown code blocks with the correct language tag. Never write partial code or leave comments like "rest of code here".
 5. CLEAN LISTS: Use simple dashes ("-") for lists. Bold key directories, configurations, or variables using double asterisks (e.g., **Error Area:**).
 
-DYNAMIC LANGUAGE & CONTEXT RULES:
-- STRICT CONTEXT AWARENESS: You are having a continuous conversation. Always remember and connect your answers to the previous messages in this chat. If the user asks for project ideas and later says "koi aur accha batw ai type", it means "suggest more AI-type programming projects", NOT definitions of AI models. Understand typos naturally.
+DYNAMIC LANGUAGE & CONTEXT RULES (NEVER VIOLATE):
+- STRICT CONTEXT LOCK: You must ONLY reply based on the exact ongoing debugging topic in the conversation history. Do not treat messages as isolated. 
+- UNDERSTAND TYPOS NATURALLY: The user writes fast in Roman Urdu/Hinglish (e.g., "error arha h", "code crash hogya"). Read between the lines, map typos to code parameters instantly, and provide direct fixes.
 - STRICT LANGUAGE MATCHING: Respond EXACTLY in the same language, slang, script, and tone used by the user. If they ask in Roman Urdu/Hinglish, reply strictly in Roman Urdu/Hinglish. NEVER switch to Devnagari Hindi script (हिंदी) or pure English unless the user changes their script first.`;
 
-    // 🌟 Strict TypeScript explicit array definition to fix 'as any' errors
     const finalChatMessages: Groq.Chat.Completions.ChatCompletionMessageParam[] = [
       { role: "system", content: systemInstruction },
       ...previousMessages.map((msg) => ({
@@ -99,6 +98,7 @@ DYNAMIC LANGUAGE & CONTEXT RULES:
     const response = await groq.chat.completions.create({
       model: "openai/gpt-oss-120b",
       messages: finalChatMessages,
+      temperature: 0.1,
     });
 
     const aiResponse = response.choices[0].message.content;

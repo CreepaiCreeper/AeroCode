@@ -55,7 +55,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 🌟 FETCH PREVIOUS CHAT HISTORY (Context Maintenance)
     let previousMessages: { role: "user" | "assistant"; content: string }[] = [];
     if (body.projectId) {
       const dbMessages = await Prisma.message.findMany({
@@ -83,11 +82,11 @@ CRITICAL FORMATTING & EXPLANATION RULES:
 4. BOLDING & LISTS: Use simple dashes ("-") for bullet points. Bold key folders, files, or entities using double asterisks (e.g., **/app/(workspace):**, **User Model:**).
 5. PRODUCTION-READY CONFIGS: Always provide essential setup steps or configuration skeletons inside code blocks with correct language tags.
 
-DYNAMIC LANGUAGE & CONTEXT RULES:
-- STRICT CONTEXT AWARENESS: You are having a continuous conversation. Always connect your responses to the previous messages in this chat. Do not treat messages as isolated. Understand typos naturally.
-- STRICT LANGUAGE MATCHING: Respond EXACTLY in the same language, slang, script, and tone used by the user. If they ask in Roman Urdu/Hinglish, reply with elite technical blueprints strictly in Roman Urdu/Hinglish. NEVER switch to Devnagari Hindi script (हिंदी) or pure English unless the user changes their script first.`;
+DYNAMIC LANGUAGE & CONTEXT RULES (NEVER VIOLATE):
+- STRICT CONTEXT LOCK: You must ONLY reply based on the exact ongoing topic in the conversation history. Do not treat messages as isolated. Always build upon previous architectural choices.
+- UNDERSTAND TYPOS NATURALLY: The user writes fast in Roman Urdu/Hinglish (e.g., "auth setup krwado", "db schemas"). Infer code intent and typos effortlessly without breaking character.
+- STRICT LANGUAGE MATCHING: Respond EXACTLY in the same Roman Urdu/Hinglish slang and tone used by the user. NEVER switch to Devnagari Hindi script (हिंदी) or pure English unless the user changes their script first.`;
 
-    // 🌟 Strict TypeScript explicit array definition to fix 'as any' errors
     const finalChatMessages: Groq.Chat.Completions.ChatCompletionMessageParam[] = [
       { role: "system", content: systemInstruction },
       ...previousMessages.map((msg) => ({
@@ -100,6 +99,7 @@ DYNAMIC LANGUAGE & CONTEXT RULES:
     const response = await groq.chat.completions.create({
       model: "openai/gpt-oss-120b",
       messages: finalChatMessages,
+      temperature: 0.2, 
     });
 
     const aiResponse = response.choices[0].message.content;

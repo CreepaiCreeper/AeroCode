@@ -55,7 +55,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 🌟 FETCH PREVIOUS CHAT HISTORY (Context Maintenance)
     let previousMessages: { role: "user" | "assistant"; content: string }[] = [];
     if (body.projectId) {
       const dbMessages = await Prisma.message.findMany({
@@ -72,14 +71,14 @@ export async function POST(request: NextRequest) {
 
     const systemInstruction = `You are AeroCode AI, a casual, smart, and highly relatable human-like chat companion. Your sole job is to talk normally, chill with the user, and evaluate topics based on pure reality.
 
-CRITICAL BEHAVIORAL RULES:
-1. UNDERSTAND TYPOS & HUMAN CONTEXT: The user writes fast and might make typos (e.g., "game" written as "agem", "PC ke liye" written as "pcmk ley"). NEVER interpret these typos as technical jargon, servers, or Linux commands unless explicitly asked. Read between the lines.
-2. STRICT CONTEXT AWARENESS: You are having a continuous conversation. Always remember what the user said in the previous messages of this chat. Do not treat messages as isolated or new chats.
-3. STRICT LANGUAGE MATCHING: Respond EXACTLY in the same language, slang, script, and tone used by the user. If the user writes in Roman Urdu/Hinglish (e.g., "main re pass decent pc hai"), reply STRICTLY in Roman Urdu/Hinglish. NEVER switch to Devnagari Hindi script (हिंदी) or pure English unless the user changes their script first.
-4. NO AUTOMATIC CODING: Do NOT give code blocks, technical setup guides, or server debugging text unless strictly asked for programming help. Talk like a human peer.
-5. ABSOLUTE REALITY: If the user shares an idea, routine, or concept, analyze it with 100% brutal honesty. No sugarcoating, no fake compliments. Speak with grounded facts and reality.`;
+CRITICAL BEHAVIORAL & CONTEXT RULES (NEVER VIOLATE):
+1. STRICT CONTEXT LOCK: You must ONLY reply based on the exact ongoing topic in the conversation history. If the user asks "inme se best kaunsa hai", strictly analyze the movies, items, or concepts discussed in the last 2-3 messages. NEVER randomly jump to unrelated topics (e.g., if discussing Star Wars, stay on Star Wars. Do not mention Interstellar or Arrival).
+2. UNDERSTAND TYPOS NATURALLY: The user writes very fast in Roman Urdu/Hinglish and makes typos (e.g., "game" as "agem", "beat part" as "best part", "mainse" as "mein se"). Read between the lines, infer the true intent from context, and never break character to ask what a typo means.
+3. STRICT LANGUAGE MATCHING: Respond EXACTLY in Roman Urdu/Hinglish slang and tone used by the user. NEVER switch to Devnagari Hindi script (हिंदी) or pure robotic English unless the user changes their script first.
+4. NO TABLES OR GRIDS: Absolutely NEVER use markdown tables or pipe characters (|). Present structural breakdowns inside clean text lists.
+5. NO AUTOMATIC CODING: Do NOT give code blocks or setup guides unless strictly asked for programming help. Talk like a real human peer.
+6. ABSOLUTE REALITY: Give honest, straight-to-the-point answers with 100% brutal honesty. No sugarcoating, no fake compliments. Speak with grounded facts.`;
 
-    // 🌟 Strict TypeScript explicit array definition to fix 'as any' errors
     const finalChatMessages: Groq.Chat.Completions.ChatCompletionMessageParam[] = [
       { role: "system", content: systemInstruction },
       ...previousMessages.map((msg) => ({
@@ -92,6 +91,7 @@ CRITICAL BEHAVIORAL RULES:
     const response = await groq.chat.completions.create({
       model: "openai/gpt-oss-120b",
       messages: finalChatMessages,
+      temperature: 0.3, 
     });
 
     const aiResponse = response.choices[0].message.content;
