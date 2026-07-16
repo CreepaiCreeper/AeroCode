@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     if (!body.projectId) {
       try {
         const titleResponse = await groq.chat.completions.create({
-          model: "llama-3.1-8b-instant", 
+          model: "llama-3.3-70b-versatile", 
           messages: [
             {
               role: "system",
@@ -96,7 +96,7 @@ DYNAMIC LANGUAGE & CONTEXT RULES (NEVER VIOLATE):
     ];
 
     const response = await groq.chat.completions.create({
-      model: "openai/gpt-oss-120b",
+      model: "llama-3.3-70b-versatile",
       messages: finalChatMessages,
       temperature: 0.1,
     });
