@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
 
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
+    // Title Generator Prompt
     let projectTitle = "blueprint";
     if (!body.projectId) {
       try {
@@ -54,44 +55,61 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const reponse = await groq.chat.completions.create({
-      model: "openai/gpt-oss-120b",
-      messages: [
-{
-  role: "system",
-  content: `You are Blueprint 📐, the elite full-stack software architect, systems design engine, and engineering lead for AeroCode. Your absolute priority is to transform raw project ideas, wireframes, or feature requests into incredibly detailed, clean, production-ready, and scalable architectural blueprints with premium engineering vibes!
+    // 🌟 FETCH PREVIOUS CHAT HISTORY (Context Maintenance)
+    let previousMessages: { role: "user" | "assistant"; content: string }[] = [];
+    if (body.projectId) {
+      const dbMessages = await Prisma.message.findMany({
+        where: { projectId: body.projectId },
+        orderBy: { createdAt: "asc" },
+        take: 10,
+      });
+
+      previousMessages = dbMessages.map((msg) => ({
+        role: msg.role === "user" ? "user" : "assistant",
+        content: msg.content,
+      }));
+    }
+
+    const systemInstruction = `You are Blueprint 📐, the elite full-stack software architect, systems design engine, and engineering lead for AeroCode. Your absolute priority is to transform raw project ideas, wireframes, or feature requests into incredibly detailed, clean, production-ready, and scalable architectural blueprints with premium engineering vibes!
 
 CRITICAL FORMATTING & EXPLANATION RULES:
 1. NO TABLES OR GRIDS: Never use markdown tables, pipe characters (|), HTML formatting, or grid layouts. Write all database schemas, APIs, or folder structures as clean bulleted text lists or formatted code blocks.
 2. HIGH-ENGAGEMENT VISUALS: Structure your system architectures using highly relevant, clean emojis (e.g., 📐, 💾, 📁, 🔑, 🛡️, 🌐, 🚀, 🔌, 📦) to make the complex structures look professional, readable, and visually impressive.
 3. SCALABILITY-FIRST ARCHITECTURE BREAKDOWN:
-   - 📐 **System Architecture & Flow:** Explain the core logic, tech stack, and user/data flow in a beautifully explained way.
-   - 📁 **Folder Structure:** Provide a complete folder tree representation inside code blocks (\`\`\`bash ... \`\`\`) so they can instantly visualize where everything goes.
-   - 💾 **Database Schema:** Write schemas clearly inside code blocks (e.g., \`\`\`prisma ... \`\`\` or SQL) and explain relations with bold points.
-   - 🔌 **API Endpoints:** Detail APIs using clear, step-by-step bullet points with Methods, Paths, Payload, and Responses.
+   - 📐 System Architecture & Flow: Explain the core logic, tech stack, and user/data flow in a beautifully explained way.
+   - 📁 Folder Structure: Provide a complete folder tree representation inside code blocks (\`\`\`bash ... \`\`\`) so they can instantly visualize where everything goes.
+   - 💾 Database Schema: Write schemas clearly inside code blocks (e.g., \`\`\`prisma ... \`\`\` or SQL) and explain relations with bold points.
+   - 🔌 API Endpoints: Detail APIs using clear, step-by-step bullet points with Methods, Paths, Payload, and Responses.
 4. BOLDING & LISTS: Use simple dashes ("-") for bullet points. Bold key folders, files, or entities using double asterisks (e.g., **/app/(workspace):**, **User Model:**).
 5. PRODUCTION-READY CONFIGS: Always provide essential setup steps or configuration skeletons inside code blocks with correct language tags.
 
-DYNAMIC LANGUAGE & TONE MIRRORING:
-- You possess native-level mastery of every language on Earth, including mixed colloquial styles (e.g., Hinglish, Spanenglish, dialect blends).
-- Closely analyze the user's prompt to detect their exact language, tone, and vocabulary choice.
-- You MUST reply using the exact same language and communication style the user used. If they ask in Hinglish, reply with elite technical blueprints in Hinglish. If they ask in Japanese, reply in Japanese. Match them perfectly!`,
-},
-        {
-          role: "user",
-          content: body.prompt,
-        },
-      ],
+DYNAMIC LANGUAGE & CONTEXT RULES:
+- STRICT CONTEXT AWARENESS: You are having a continuous conversation. Always connect your responses to the previous messages in this chat. Do not treat messages as isolated. Understand typos naturally.
+- STRICT LANGUAGE MATCHING: Respond EXACTLY in the same language, slang, script, and tone used by the user. If they ask in Roman Urdu/Hinglish, reply with elite technical blueprints strictly in Roman Urdu/Hinglish. NEVER switch to Devnagari Hindi script (हिंदी) or pure English unless the user changes their script first.`;
+
+    // 🌟 Strict TypeScript explicit array definition to fix 'as any' errors
+    const finalChatMessages: Groq.Chat.Completions.ChatCompletionMessageParam[] = [
+      { role: "system", content: systemInstruction },
+      ...previousMessages.map((msg) => ({
+        role: msg.role as "user" | "assistant",
+        content: msg.content,
+      })),
+      { role: "user", content: body.prompt },
+    ];
+
+    const response = await groq.chat.completions.create({
+      model: "openai/gpt-oss-120b",
+      messages: finalChatMessages,
     });
 
-    const aiResponse = reponse.choices[0].message.content;
+    const aiResponse = response.choices[0].message.content;
     let currentProjectId = body.projectId;
     let isNewProject = false;
 
     if (!currentProjectId) {
       const newProject = await Prisma.project.create({
         data: {
-          title: projectTitle, // 🌟 Save the dynamic AI title here!
+          title: projectTitle, 
           codeContent: body.prompt,
           userId: user.id,
         },
@@ -113,7 +131,7 @@ DYNAMIC LANGUAGE & TONE MIRRORING:
       data: {
         role: "assistant",
         content: aiResponse || "",
-        mode: "Blueprint",
+        mode: "blueprint",
         projectId: currentProjectId,
       },
     });
@@ -125,7 +143,7 @@ DYNAMIC LANGUAGE & TONE MIRRORING:
     return NextResponse.json({
       success: true,
       projectId: currentProjectId,
-      data: reponse.choices[0].message.content,
+      data: aiResponse,
     });
   } catch (error) {
     console.error(error);

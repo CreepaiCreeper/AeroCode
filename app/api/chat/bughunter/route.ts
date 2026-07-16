@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
 
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
+    // Title Generator Prompt
     let projectTitle = "BugHunter";
     if (!body.projectId) {
       try {
@@ -40,8 +41,7 @@ export async function POST(request: NextRequest) {
           messages: [
             {
               role: "system",
-              content:
-                "You are a helper that generates a super short, clean, and relevant debugging project title (maximum 3 to 4 words) based on the user's bug report or code. Do not include any quotes, markdown, or extra explanations. Just give the pure title text.",
+              content: "You are a helper that generates a super short, clean, and relevant debugging project title (maximum 3 to 4 words) based on the user's bug report or code. Do not include any quotes, markdown, or extra explanations. Just give the pure title text.",
             },
             {
               role: "user",
@@ -49,40 +49,56 @@ export async function POST(request: NextRequest) {
             },
           ],
         });
-        projectTitle =
-          titleResponse.choices[0].message.content?.trim() || "BugHunter";
+        projectTitle = titleResponse.choices[0].message.content?.trim() || "BugHunter";
       } catch (err) {
         console.error("Title generation failed, using default", err);
       }
     }
 
-    const response = await groq.chat.completions.create({
-      model: "openai/gpt-oss-120b",
-      messages: [
-        {
-          role: "system",
-          content: `You are BugHunter 🪲, the elite cybersecurity, code dissection, and full-stack debugging engine for AeroCode. Your absolute priority is to hunt down bugs, identify critical vulnerabilities, and provide flawless, production-ready fixes with maximum clarity and premium developer vibes!
+    // 🌟 FETCH PREVIOUS CHAT HISTORY (Context Maintenance)
+    let previousMessages: { role: "user" | "assistant"; content: string }[] = [];
+    if (body.projectId) {
+      const dbMessages = await Prisma.message.findMany({
+        where: { projectId: body.projectId },
+        orderBy: { createdAt: "asc" },
+        take: 10,
+      });
+
+      previousMessages = dbMessages.map((msg) => ({
+        role: msg.role === "user" ? "user" : "assistant",
+        content: msg.content,
+      }));
+    }
+
+    const systemInstruction = `You are BugHunter 🪲, the elite cybersecurity, code dissection, and full-stack debugging engine for AeroCode. Your absolute priority is to hunt down bugs, identify critical vulnerabilities, and provide flawless, production-ready fixes with maximum clarity and premium developer vibes!
 
 CRITICAL FORMATTING & EXPLANATION RULES:
 1. NO TABLES OR GRIDS: Never use markdown tables, pipe characters (|), HTML formatting, or grid layouts. All structured data or file structures must be written as clean lists, clean text blocks, or formatted code snippets.
 2. HIGH-ENGAGEMENT VISUALS: Always use highly relevant emojis (e.g., 🪲, 🔍, 🛠️, 💡, ⚠️, 🚀, 🛡️, 📦) to structure your response, highlight important points, and keep the reading flow extremely engaging and easy to understand.
 3. EXPLAIN THE "WHY" BEFORE THE "FIX":
-   - 🔍 **What's Wrong:** Start with a breakdown of the issue. Explain what is causing the error or vulnerability in simple, solid terms so the user actually learns.
-   - ⚠️ **The Impact:** Briefly explain what will go wrong if this isn't fixed (e.g., memory leaks, crashes, security risks).
-   - 🛠️ **The Fix:** Provide the clean explanation.
-4. 100% COMPLETE CODE BLOCKS: When giving the fixed code, always provide the 100% complete corrected code file inside proper markdown code blocks with the correct language tag (e.g., \`\`\`tsx ... \`\`\` or \`\`\`nodejs ... \`\`\`). Never write partial code or leave "rest of code here" comments unless explicitly asked.
-5. CLEAN LISTS: Use simple dashes ("-") for lists. Bold key directories, configurations, or variables using double asterisks (e.g., **Error Area:**, **jwt.verify()**).
+   - 🔍 What's Wrong: Start with a breakdown of the issue. Explain what is causing the error or vulnerability in simple, solid terms so the user actually learns.
+   - ⚠️ The Impact: Briefly explain what will go wrong if this isn't fixed (e.g., memory leaks, crashes, security risks).
+   - 🛠️ The Fix: Provide the clean explanation.
+4. 100% COMPLETE CODE BLOCKS: When giving the fixed code, always provide the 100% complete corrected code file inside proper markdown code blocks with the correct language tag. Never write partial code or leave comments like "rest of code here".
+5. CLEAN LISTS: Use simple dashes ("-") for lists. Bold key directories, configurations, or variables using double asterisks (e.g., **Error Area:**).
 
-DYNAMIC LANGUAGE & TONE MIRRORING:
-- You possess native-level mastery of every language on Earth, including mixed colloquial styles (e.g., Hinglish, Spanenglish, dialect blends).
-- Closely analyze the user's prompt to detect their exact language, tone, and vocabulary choice.
-- You MUST reply using the exact same language and communication style the user used. If they ask in Hinglish, reply with elite technical analysis in Hinglish. If they ask in Japanese, reply in Japanese. Match them perfectly!`,
-        },
-        {
-          role: "user",
-          content: body.prompt,
-        },
-      ],
+DYNAMIC LANGUAGE & CONTEXT RULES:
+- STRICT CONTEXT AWARENESS: You are having a continuous conversation. Always remember and connect your answers to the previous messages in this chat. If the user asks for project ideas and later says "koi aur accha batw ai type", it means "suggest more AI-type programming projects", NOT definitions of AI models. Understand typos naturally.
+- STRICT LANGUAGE MATCHING: Respond EXACTLY in the same language, slang, script, and tone used by the user. If they ask in Roman Urdu/Hinglish, reply strictly in Roman Urdu/Hinglish. NEVER switch to Devnagari Hindi script (हिंदी) or pure English unless the user changes their script first.`;
+
+    // 🌟 Strict TypeScript explicit array definition to fix 'as any' errors
+    const finalChatMessages: Groq.Chat.Completions.ChatCompletionMessageParam[] = [
+      { role: "system", content: systemInstruction },
+      ...previousMessages.map((msg) => ({
+        role: msg.role as "user" | "assistant",
+        content: msg.content,
+      })),
+      { role: "user", content: body.prompt },
+    ];
+
+    const response = await groq.chat.completions.create({
+      model: "openai/gpt-oss-120b",
+      messages: finalChatMessages,
     });
 
     const aiResponse = response.choices[0].message.content;
@@ -126,7 +142,7 @@ DYNAMIC LANGUAGE & TONE MIRRORING:
     return NextResponse.json({
       success: true,
       projectId: currentProjectId,
-      data: response.choices[0].message.content,
+      data: aiResponse,
     });
   } catch (error) {
     console.error(error);

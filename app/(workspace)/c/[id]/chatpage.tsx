@@ -8,7 +8,6 @@ import {
   ChevronDown,
   ChevronUp,
   Lock,
-  MessageSquare,
 } from "lucide-react";
 import { useAuth } from "@/app/hooks/useAuth";
 
@@ -93,7 +92,6 @@ const ChatPage = ({ messages, projectId, mode }: ChatPageProps) => {
   const [loading, setLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   
-  // 🌟 Hydration Mismatch Safety Hook
   const [hasMounted, setHasMounted] = useState(false);
   const [authStatus, setAuthStatus] = useState(false);
 
@@ -143,7 +141,6 @@ const ChatPage = ({ messages, projectId, mode }: ChatPageProps) => {
     setLoading(true);
 
     try {
-      // Endpoint Selector based on mode
       const apiRoute =
         mode === "normal"
           ? "/api/chat/normal"
@@ -257,7 +254,6 @@ const ChatPage = ({ messages, projectId, mode }: ChatPageProps) => {
     });
   };
 
-  // 🌟 Hydration mismatch se bachane ke liye pehla render standard rakhein
   if (!hasMounted) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
