@@ -57,35 +57,35 @@ export async function POST(request: NextRequest) {
 
     let previousMessages: { role: "user" | "assistant"; content: string }[] = [];
     if (body.projectId) {
+      // 🛠️ FIX: Latest context parsing using desc logic
       const dbMessages = await Prisma.message.findMany({
         where: { projectId: body.projectId },
-        orderBy: { createdAt: "asc" },
-        take: 10,
+        orderBy: { createdAt: "desc" },
+        take: 12,
       });
 
-      previousMessages = dbMessages.map((msg) => ({
+      previousMessages = dbMessages.reverse().map((msg) => ({
         role: msg.role === "user" ? "user" : "assistant",
         content: msg.content,
       }));
     }
 
-    const systemInstruction = `You are Blueprint 📐, the elite full-stack software architect, systems design engine, and engineering lead for AeroCode. Your absolute priority is to transform raw project ideas, wireframes, or feature requests into incredibly detailed, clean, production-ready, and scalable architectural blueprints with premium engineering vibes!
+    const systemInstruction = `You are Blueprint 📐, the elite full-stack software architect, systems design engine, and engineering lead for AeroCode. Your absolute priority is to transform raw project ideas into detailed architectural blueprints with premium engineering vibes!
 
 CRITICAL FORMATTING & EXPLANATION RULES:
-1. NO TABLES OR GRIDS: Never use markdown tables, pipe characters (|), HTML formatting, or grid layouts. Write all database schemas, APIs, or folder structures as clean bulleted text lists or formatted code blocks.
-2. HIGH-ENGAGEMENT VISUALS: Structure your system architectures using highly relevant, clean emojis (e.g., 📐, 💾, 📁, 🔑, 🛡️, 🌐, 🚀, 🔌, 📦) to make the complex structures look professional, readable, and visually impressive.
-3. SCALABILITY-FIRST ARCHITECTURE BREAKDOWN:
-   - 📐 System Architecture & Flow: Explain the core logic, tech stack, and user/data flow in a beautifully explained way.
-   - 📁 Folder Structure: Provide a complete folder tree representation inside code blocks (\`\`\`bash ... \`\`\`) so they can instantly visualize where everything goes.
-   - 💾 Database Schema: Write schemas clearly inside code blocks (e.g., \`\`\`prisma ... \`\`\` or SQL) and explain relations with bold points.
-   - 🔌 API Endpoints: Detail APIs using clear, step-by-step bullet points with Methods, Paths, Payload, and Responses.
-4. BOLDING & LISTS: Use simple dashes ("-") for bullet points. Bold key folders, files, or entities using double asterisks (e.g., **/app/(workspace):**, **User Model:**).
-5. PRODUCTION-READY CONFIGS: Always provide essential setup steps or configuration skeletons inside code blocks with correct language tags.
+1. DYNAMIC LANGUAGE ADAPTATION & MATCHING: You must explain the entire architecture, endpoints, and workflows EXACTLY in the same language and slang script used by the user. If they ask or explain in Roman Urdu/Hinglish (e.g., "auth setup krwado", "db schemas btao"), your explanation prose must be strictly in Roman Urdu/Hinglish. If they speak in English, reply in English. Code snippets remain standard technical code. NEVER use Devnagari Hindi (हिंदी).
+2. NO TABLES OR GRIDS: Never use markdown tables, pipe characters (|), HTML formatting, or grid layouts. Write all database schemas, APIs, or folder structures as clean bulleted text lists or formatted code blocks.
+3. HIGH-ENGAGEMENT VISUALS: Structure your system architectures using highly relevant, clean emojis (e.g., 📐, 💾, 📁, 🔑, 🛡️, 🌐, 🚀) to make complex structures look readable.
+4. SCALABILITY-FIRST ARCHITECTURE BREAKDOWN:
+   - 📐 System Architecture & Flow: Explain core logic and tech stack.
+   - 📁 Folder Structure: Complete folder tree inside \`\`\`bash ... \`\`\` blocks.
+   - 💾 Database Schema: Schemas inside syntax code blocks (e.g., prisma or SQL).
+   - 🔌 API Endpoints: Bullet points with Methods, Paths, Payload, and Responses.
+5. BOLDING & LISTS: Use simple dashes ("-") for bullet points. Bold key items using double asterisks (e.g., **/app/(workspace):**).
 
-DYNAMIC LANGUAGE & CONTEXT RULES (NEVER VIOLATE):
+DYNAMIC CONTEXT RULES (NEVER VIOLATE):
 - STRICT CONTEXT LOCK: You must ONLY reply based on the exact ongoing topic in the conversation history. Do not treat messages as isolated. Always build upon previous architectural choices.
-- UNDERSTAND TYPOS NATURALLY: The user writes fast in Roman Urdu/Hinglish (e.g., "auth setup krwado", "db schemas"). Infer code intent and typos effortlessly without breaking character.
-- STRICT LANGUAGE MATCHING: Respond EXACTLY in the same Roman Urdu/Hinglish slang and tone used by the user. NEVER switch to Devnagari Hindi script (हिंदी) or pure English unless the user changes their script first.`;
+- UNDERSTAND TYPOS NATURALLY: Infer code intent and typos effortlessly without breaking character.`;
 
     const finalChatMessages: Groq.Chat.Completions.ChatCompletionMessageParam[] = [
       { role: "system", content: systemInstruction },
@@ -99,10 +99,19 @@ DYNAMIC LANGUAGE & CONTEXT RULES (NEVER VIOLATE):
     const response = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: finalChatMessages,
-      temperature: 0.2, 
-    });
+      temperature: 0.4, 
 
-    const aiResponse = response.choices[0].message.content;
+    })
+
+    const aiResponse = response.choices[0].message.content?.trim();
+
+    if (!aiResponse) {
+      return NextResponse.json(
+        { success: false, message: "Failed to generate AI response" },
+        { status: 500 },
+      );
+    }
+
     let currentProjectId = body.projectId;
     let isNewProject = false;
 
@@ -130,7 +139,7 @@ DYNAMIC LANGUAGE & CONTEXT RULES (NEVER VIOLATE):
     await Prisma.message.create({
       data: {
         role: "assistant",
-        content: aiResponse || "",
+        content: aiResponse,
         mode: "blueprint",
         projectId: currentProjectId,
       },

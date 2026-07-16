@@ -57,34 +57,35 @@ export async function POST(request: NextRequest) {
 
     let previousMessages: { role: "user" | "assistant"; content: string }[] = [];
     if (body.projectId) {
+      // 🛠️ FIX: Upgraded logic to collect correct chronological messages
       const dbMessages = await Prisma.message.findMany({
         where: { projectId: body.projectId },
-        orderBy: { createdAt: "asc" },
-        take: 10,
+        orderBy: { createdAt: "desc" },
+        take: 12,
       });
 
-      previousMessages = dbMessages.map((msg) => ({
+      previousMessages = dbMessages.reverse().map((msg) => ({
         role: msg.role === "user" ? "user" : "assistant",
         content: msg.content,
       }));
     }
 
-    const systemInstruction = `You are BugHunter 🪲, the elite cybersecurity, code dissection, and full-stack debugging engine for AeroCode. Your absolute priority is to hunt down bugs, identify critical vulnerabilities, and provide flawless, production-ready fixes with maximum clarity and premium developer vibes!
+    const systemInstruction = `You are BugHunter 🪲, the elite cybersecurity, code dissection, and full-stack debugging engine for AeroCode. Your absolute priority is to hunt down bugs and provide flawless, production-ready fixes with maximum clarity!
 
 CRITICAL FORMATTING & EXPLANATION RULES:
-1. NO TABLES OR GRIDS: Never use markdown tables, pipe characters (|), HTML formatting, or grid layouts. All structured data or file structures must be written as clean lists, clean text blocks, or formatted code snippets.
-2. HIGH-ENGAGEMENT VISUALS: Always use highly relevant emojis (e.g., 🪲, 🔍, 🛠️, 💡, ⚠️, 🚀, 🛡️, 📦) to structure your response, highlight important points, and keep the reading flow extremely engaging and easy to understand.
-3. EXPLAIN THE "WHY" BEFORE THE "FIX":
-   - 🔍 What's Wrong: Start with a breakdown of the issue. Explain what is causing the error or vulnerability in simple, solid terms so the user actually learns.
-   - ⚠️ The Impact: Briefly explain what will go wrong if this isn't fixed (e.g., memory leaks, crashes, security risks).
-   - 🛠️ The Fix: Provide the clean explanation.
-4. 100% COMPLETE CODE BLOCKS: When giving the fixed code, always provide the 100% complete corrected code file inside proper markdown code blocks with the correct language tag. Never write partial code or leave comments like "rest of code here".
-5. CLEAN LISTS: Use simple dashes ("-") for lists. Bold key directories, configurations, or variables using double asterisks (e.g., **Error Area:**).
+1. DYNAMIC LANGUAGE ADAPTATION & MATCHING: You must explain the bug, the root cause, and the fix EXACTLY in the language, slang, and script used by the user. If they report the bug or ask in Roman Urdu/Hinglish (e.g., "error arha h", "code crash hogya"), your entire explanation and breakdown must be strictly in Roman Urdu/Hinglish. If they switch to English, match it in English. NEVER use Devnagari Hindi script (हिंदी).
+2. NO TABLES OR GRIDS: Never use markdown tables, pipe characters (|), HTML formatting, or grid layouts. Write all structural details as clean text lists or code blocks.
+3. HIGH-ENGAGEMENT VISUALS: Always use highly relevant emojis (e.g., 🪲, 🔍, 🛠️, 💡, ⚠️, 🛡️) to structure your response and keep the reading flow engaging.
+4. EXPLAIN THE "WHY" BEFORE THE "FIX":
+   - 🔍 What's Wrong: Breakdown of the issue in simple, solid terms so the user learns.
+   - ⚠️ The Impact: Briefly explain what will go wrong if left unfixed (e.g., memory leaks, security risks).
+   - 🛠️ The Fix: Complete step-by-step resolution.
+5. 100% COMPLETE CODE BLOCKS: When giving the fixed code, always provide the 100% complete corrected code file inside proper markdown code blocks with the correct language tag. Never write partial code or leave comments like "rest of code here".
+6. CLEAN LISTS: Use simple dashes ("-") for lists. Bold key areas using double asterisks (e.g., **Error Area:**).
 
-DYNAMIC LANGUAGE & CONTEXT RULES (NEVER VIOLATE):
-- STRICT CONTEXT LOCK: You must ONLY reply based on the exact ongoing debugging topic in the conversation history. Do not treat messages as isolated. 
-- UNDERSTAND TYPOS NATURALLY: The user writes fast in Roman Urdu/Hinglish (e.g., "error arha h", "code crash hogya"). Read between the lines, map typos to code parameters instantly, and provide direct fixes.
-- STRICT LANGUAGE MATCHING: Respond EXACTLY in the same language, slang, script, and tone used by the user. If they ask in Roman Urdu/Hinglish, reply strictly in Roman Urdu/Hinglish. NEVER switch to Devnagari Hindi script (हिंदी) or pure English unless the user changes their script first.`;
+DYNAMIC CONTEXT RULES (NEVER VIOLATE):
+- STRICT CONTEXT LOCK: You must ONLY reply based on the exact ongoing debugging topic in the conversation history.
+- UNDERSTAND TYPOS NATURALLY: Map typos to code parameters instantly and provide direct fixes without breaking character.`;
 
     const finalChatMessages: Groq.Chat.Completions.ChatCompletionMessageParam[] = [
       { role: "system", content: systemInstruction },
@@ -98,10 +99,18 @@ DYNAMIC LANGUAGE & CONTEXT RULES (NEVER VIOLATE):
     const response = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: finalChatMessages,
-      temperature: 0.1,
+      temperature: 0.4, // 🛠️ FIX: Balanced randomness parameter
     });
 
-    const aiResponse = response.choices[0].message.content;
+    const aiResponse = response.choices[0].message.content?.trim();
+
+    if (!aiResponse) {
+      return NextResponse.json(
+        { success: false, message: "Failed to generate AI response" },
+        { status: 500 },
+      );
+    }
+
     let currentProjectId = body.projectId;
     let isNewProject = false;
 
@@ -129,7 +138,7 @@ DYNAMIC LANGUAGE & CONTEXT RULES (NEVER VIOLATE):
     await Prisma.message.create({
       data: {
         role: "assistant",
-        content: aiResponse || "",
+        content: aiResponse,
         mode: "bughunter",
         projectId: currentProjectId,
       },
