@@ -14,7 +14,6 @@ const Home = () => {
   const isLoggedIn = useAuth();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // 🌟 Hamesha false se start — server aur client ka pehla render match karega
   const [authStatus, setAuthStatus] = useState<boolean>(false);
 
   useEffect(() => {

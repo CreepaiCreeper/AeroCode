@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // 2. Cookie se auth token check
     const token = request.cookies.get("token");
 
     if (!token) {
@@ -31,6 +32,7 @@ export async function POST(request: NextRequest) {
     let userId = "";
 
     try {
+      // 3. Token verify karo
       const decoded = jwt.verify(token.value, process.env.JWT_SECRET!);
 
       const payload = decoded as {
@@ -69,6 +71,7 @@ export async function POST(request: NextRequest) {
     const projectTitle =
       prompt.split(" ").slice(0, 5).join(" ") || "New Project";
 
+    // 4. Database Transaction (Fixing missing fields 🌟)
     const result = await Prisma.$transaction(async (tx) => {
       const project = await tx.project.create({
         data: {
@@ -83,6 +86,7 @@ export async function POST(request: NextRequest) {
           content: prompt,
           role: "user",
           projectId: project.id,
+          mode: "normal",
         },
       });
 
