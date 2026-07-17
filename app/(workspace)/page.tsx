@@ -88,7 +88,8 @@ const Home = () => {
       const data = await chatResponse.json();
 
       if (data.success && data.projectId) {
-        router.push(`/project/${data.projectId}`);
+        // 🔥 Redirect to your correct /c/[id] workspace route
+        router.push(`/c/${data.projectId}`);
       } else {
         setErrorMessage(data.message || "Something went wrong while processing.");
       }
@@ -118,7 +119,7 @@ const Home = () => {
           </>
         ) : (
           <div className="text-xs font-bold text-purple-400 bg-purple-500/5 px-4 py-2 rounded-xl border border-purple-500/10 tracking-wide select-none">
-            ⚡ Connected Workspace
+            Workspace Active
           </div>
         )}
       </div>
@@ -133,7 +134,7 @@ const Home = () => {
           </p>
         </div>
 
-        {/* Updated Dual-Engine Toggle Matrix */}
+        {/* Dual-Engine Toggle Matrix */}
         <div className="grid grid-cols-2 gap-3 max-w-md mx-auto bg-[#0d0d0e] border border-zinc-900 p-1.5 rounded-2xl shadow-xl">
           <button
             onClick={() => setActiveMode("blueprint")}
