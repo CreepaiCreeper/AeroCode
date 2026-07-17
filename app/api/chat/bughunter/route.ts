@@ -37,11 +37,12 @@ export async function POST(request: NextRequest) {
     if (!body.projectId) {
       try {
         const titleResponse = await groq.chat.completions.create({
-          model: "llama-3.3-70b-versatile", 
+          model: "llama-3.3-70b-versatile",
           messages: [
             {
               role: "system",
-              content: "You are a helper that generates a super short, clean, and relevant debugging project title (maximum 3 to 4 words) based on the user's bug report or code. Do not include any quotes, markdown, or extra explanations. Just give the pure title text.",
+              content:
+                "You are a helper that generates a super short, clean, and relevant debugging project title (maximum 3 to 4 words) based on the user's bug report or code. Do not include any quotes, markdown, or extra explanations. Just give the pure title text.",
             },
             {
               role: "user",
@@ -49,13 +50,15 @@ export async function POST(request: NextRequest) {
             },
           ],
         });
-        projectTitle = titleResponse.choices[0].message.content?.trim() || "BugHunter";
+        projectTitle =
+          titleResponse.choices[0].message.content?.trim() || "BugHunter";
       } catch (err) {
         console.error("Title generation failed, using default", err);
       }
     }
 
-    let previousMessages: { role: "user" | "assistant"; content: string }[] = [];
+    let previousMessages: { role: "user" | "assistant"; content: string }[] =
+      [];
     if (body.projectId) {
       // 🛠️ FIX: Upgraded logic to collect correct chronological messages
       const dbMessages = await Prisma.message.findMany({
@@ -73,33 +76,39 @@ export async function POST(request: NextRequest) {
     const systemInstruction = `You are BugHunter 🪲, the elite cybersecurity, code dissection, and full-stack debugging engine for AeroCode. Your absolute priority is to hunt down bugs and provide flawless, production-ready fixes with maximum clarity!
 
 CRITICAL FORMATTING & EXPLANATION RULES:
-1. DYNAMIC LANGUAGE ADAPTATION & MATCHING: You must explain the bug, the root cause, and the fix EXACTLY in the language, slang, and script used by the user. If they report the bug or ask in Roman Urdu/Hinglish (e.g., "error arha h", "code crash hogya"), your entire explanation and breakdown must be strictly in Roman Urdu/Hinglish. If they switch to English, match it in English. NEVER use Devnagari Hindi script (हिंदी).
-2. NO TABLES OR GRIDS: Never use markdown tables, pipe characters (|), HTML formatting, or grid layouts. Write all structural details as clean text lists or code blocks.
-3. HIGH-ENGAGEMENT VISUALS: Always use highly relevant emojis (e.g., 🪲, 🔍, 🛠️, 💡, ⚠️, 🛡️) to structure your response and keep the reading flow engaging.
-4. EXPLAIN THE "WHY" BEFORE THE "FIX":
+1. GREETING & CONVERSATION START: You must ALWAYS start the very first chat/interaction yourself in professional, high-energy English (e.g., "BugHunter is active! 🪲 Paste your crashing code, stack traces, or security bugs, and let's eliminate them. What error are we hunting down today?").
+2. DYNAMIC LANGUAGE ADAPTATION, MATCHING & SWITCHING: After the initial English greeting, you must explain the bug, the root cause, and the fix EXACTLY in the language, slang, and script used by the user. 
+   - If they report the bug or ask in Roman Urdu/Hinglish (e.g., "error arha h", "code crash hogya"), your entire explanation and breakdown must be strictly in Roman Urdu/Hinglish. 
+   - If they switch to English, match it in English. 
+   - CRITICAL: If the user explicitly asks you to change the language at any point (e.g., "change language to English", "ab Roman Urdu me smjhao", "language badlo"), you must instantly respect that command and switch to that language for all subsequent responses. 
+   - NEVER use Devnagari Hindi script (हिंदी).
+3. NO TABLES OR GRIDS: Never use markdown tables, pipe characters (|), HTML formatting, or grid layouts. Write all structural details as clean text lists or code blocks.
+4. HIGH-ENGAGEMENT VISUALS: Always use highly relevant emojis (e.g., 🪲, 🔍, 🛠️, 💡, ⚠️, 🛡️) to structure your response and keep the reading flow engaging.
+5. EXPLAIN THE "WHY" BEFORE THE "FIX":
    - 🔍 What's Wrong: Breakdown of the issue in simple, solid terms so the user learns.
    - ⚠️ The Impact: Briefly explain what will go wrong if left unfixed (e.g., memory leaks, security risks).
    - 🛠️ The Fix: Complete step-by-step resolution.
-5. 100% COMPLETE CODE BLOCKS: When giving the fixed code, always provide the 100% complete corrected code file inside proper markdown code blocks with the correct language tag. Never write partial code or leave comments like "rest of code here".
-6. CLEAN LISTS: Use simple dashes ("-") for lists. Bold key areas using double asterisks (e.g., **Error Area:**).
+6. 100% COMPLETE CODE BLOCKS: When giving the fixed code, always provide the 100% complete corrected code file inside proper markdown code blocks with the correct language tag. Never write partial code or leave comments like "rest of code here".
+7. CLEAN LISTS: Use simple dashes ("-") for lists. Bold key areas using double asterisks (e.g., **Error Area:**).
 
 DYNAMIC CONTEXT RULES (NEVER VIOLATE):
 - STRICT CONTEXT LOCK: You must ONLY reply based on the exact ongoing debugging topic in the conversation history.
 - UNDERSTAND TYPOS NATURALLY: Map typos to code parameters instantly and provide direct fixes without breaking character.`;
 
-    const finalChatMessages: Groq.Chat.Completions.ChatCompletionMessageParam[] = [
-      { role: "system", content: systemInstruction },
-      ...previousMessages.map((msg) => ({
-        role: msg.role as "user" | "assistant",
-        content: msg.content,
-      })),
-      { role: "user", content: body.prompt },
-    ];
+    const finalChatMessages: Groq.Chat.Completions.ChatCompletionMessageParam[] =
+      [
+        { role: "system", content: systemInstruction },
+        ...previousMessages.map((msg) => ({
+          role: msg.role as "user" | "assistant",
+          content: msg.content,
+        })),
+        { role: "user", content: body.prompt },
+      ];
 
     const response = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: finalChatMessages,
-      temperature: 0.4, // 🛠️ FIX: Balanced randomness parameter
+      temperature: 0.4,
     });
 
     const aiResponse = response.choices[0].message.content?.trim();
@@ -117,7 +126,7 @@ DYNAMIC CONTEXT RULES (NEVER VIOLATE):
     if (!currentProjectId) {
       const newProject = await Prisma.project.create({
         data: {
-          title: projectTitle, 
+          title: projectTitle,
           codeContent: body.prompt,
           userId: user.id,
         },
