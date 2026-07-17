@@ -88,16 +88,15 @@ const Home = () => {
       const data = await chatResponse.json();
 
       if (data.success && data.projectId) {
-        // 🌟 FIX: router.refresh() Sidebar (server component) ko force fresh data fetch karayega
-        router.refresh();
-        router.push(`/c/${data.projectId}`);
+        // 🌟 FIX: window.location.href hard reload karta hai — Sidebar guaranteed fresh data lega
+        window.location.href = `/c/${data.projectId}`;
       } else {
         setErrorMessage(data.message || "Something went wrong while processing.");
+        setLoading(false);
       }
     } catch (err) {
       console.error(err);
       setErrorMessage("Network error occurred. Failed to submit prompt.");
-    } finally {
       setLoading(false);
     }
   };
@@ -135,7 +134,6 @@ const Home = () => {
           </p>
         </div>
 
-        {/* Updated Dual-Engine Toggle Matrix */}
         <div className="grid grid-cols-2 gap-3 max-w-md mx-auto bg-[#0d0d0e] border border-zinc-900 p-1.5 rounded-2xl shadow-xl">
           <button
             onClick={() => setActiveMode("blueprint")}
