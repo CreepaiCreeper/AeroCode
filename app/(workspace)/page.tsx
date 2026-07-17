@@ -88,6 +88,8 @@ const Home = () => {
       const data = await chatResponse.json();
 
       if (data.success && data.projectId) {
+        // 🌟 FIX: router.refresh() Sidebar (server component) ko force fresh data fetch karayega
+        router.refresh();
         router.push(`/c/${data.projectId}`);
       } else {
         setErrorMessage(data.message || "Something went wrong while processing.");
