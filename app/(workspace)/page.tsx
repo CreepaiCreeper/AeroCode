@@ -88,7 +88,10 @@ const Home = () => {
       const data = await chatResponse.json();
 
       if (data.success && data.projectId) {
-        // 🔥 Redirect to your correct /c/[id] workspace route
+        // 🔥 FIX: Server side components (Sidebar/Recents) ko instant data sync karne ke liye notify karo
+        router.refresh(); 
+        
+        // Dynamic route dashboard shift array activation
         router.push(`/c/${data.projectId}`);
       } else {
         setErrorMessage(data.message || "Something went wrong while processing.");
