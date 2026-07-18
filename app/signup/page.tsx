@@ -28,7 +28,7 @@ const Page = () => {
       emailLower.endsWith("@gmail.com") || emailLower.endsWith("@outlook.com");
 
     if (!isValidDomain) {
-      setMessage("Only Gmail or Outlook email addresses are allowed");
+      setMessage("Invalid email addresse");
       setIsSuccess(false);
       return;
     }
