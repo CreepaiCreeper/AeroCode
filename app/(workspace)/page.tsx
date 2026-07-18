@@ -3,11 +3,14 @@
 import { Bug, Compass, LogIn, UserPlus } from "lucide-react";
 import React, { useState, useRef, useEffect, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/hooks/useAuth"; 
 
 const Home = () => {
-  const [activeMode, setActiveMode] = useState("bughunter");
+  const searchParams = useSearchParams();
+  const initialMode = searchParams.get("mode") === "blueprint" ? "blueprint" : "bughunter";
+
+  const [activeMode, setActiveMode] = useState(initialMode);
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -18,6 +21,13 @@ const Home = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [authStatus, setAuthStatus] = useState<boolean>(false);
+
+  useEffect(() => {
+    const modeParam = searchParams.get("mode");
+    if (modeParam === "blueprint" || modeParam === "bughunter") {
+      setActiveMode(modeParam);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (isLoggedIn !== null) {
@@ -94,7 +104,6 @@ const Home = () => {
       const targetId = data.projectId || data.id || (data.data && data.data.projectId);
 
       if (targetId) {
-        // 🌟 pehle navigate, phir refresh — bina hard reload ke live update
         startTransition(() => {
           router.push(`/c/${targetId}`);
           router.refresh();
@@ -208,7 +217,6 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Modes Section — sirf Bug Hunter + Blueprint */}
         <div className="flex gap-3 mt-6 justify-center">
           <button
             onClick={() => !loading && authStatus && setActiveMode("bughunter")}
