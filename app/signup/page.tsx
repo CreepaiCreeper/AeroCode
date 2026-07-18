@@ -22,6 +22,17 @@ const Page = () => {
       return; 
     }
 
+    // 🌟 FIX: Sirf Gmail aur Outlook emails allow karo
+    const emailLower = Email.trim().toLowerCase();
+    const isValidDomain =
+      emailLower.endsWith("@gmail.com") || emailLower.endsWith("@outlook.com");
+
+    if (!isValidDomain) {
+      setMessage("Only Gmail or Outlook email addresses are allowed");
+      setIsSuccess(false);
+      return;
+    }
+
     try {
       const res = await fetch("/api/auth/signup", { 
         method: "POST",
@@ -94,7 +105,7 @@ const Page = () => {
               </span>
               <input
                 type="email"
-                placeholder="Email Address"
+                placeholder="Email Address (Gmail or Outlook only)"
                 value={Email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-white/[0.05] border border-white/10 placeholder:text-zinc-500 text-white h-12 rounded-xl pl-12 pr-4 outline-none transition-all duration-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:bg-white/[0.08]"
